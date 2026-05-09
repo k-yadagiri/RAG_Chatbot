@@ -16,6 +16,14 @@ The system retrieves relevant information from uploaded PDFs and generates conte
 
 ---
 
+
+## 🌐 Live Demo  
+Try out the deployed project here:  
+
+- 🚀 **Streamlit App** → [https://agnetic-ai-chatbot.streamlit.app/](https://ragchatbot-bbcvfwoztjycthwd6uw4xb.streamlit.app/)  
+
+---
+
 # Features
 
 - Upload PDF documents
