@@ -8,36 +8,214 @@ from langchain_community.vectorstores import Chroma
 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
+
 import tempfile
 import os
 
-# Load environment variables
+# ========================= PAGE CONFIG =========================
+
+st.set_page_config(
+    page_title="AI RAG PDF Assistant",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# ========================= CUSTOM CSS =========================
+
+st.markdown("""
+<style>
+
+/* Main Background */
+.stApp {
+    background: linear-gradient(
+        135deg,
+        #0f172a,
+        #1e293b,
+        #111827
+    );
+    color: white;
+}
+
+/* Hide Streamlit Header */
+header {
+    visibility: hidden;
+}
+
+/* Main Title */
+.main-title {
+    font-size: 60px;
+    font-weight: bold;
+    text-align: center;
+    background: linear-gradient(
+        90deg,
+        #38bdf8,
+        #818cf8,
+        #c084fc
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+/* Subtitle */
+.sub-text {
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 20px;
+    margin-bottom: 40px;
+}
+
+/* Upload Box */
+section[data-testid="stFileUploader"] {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 25px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+}
+
+/* Text Input */
+.stTextInput > div > div > input {
+    background-color: rgba(255,255,255,0.08);
+    color: white;
+    border-radius: 14px;
+    border: 1px solid #38bdf8;
+    padding: 14px;
+    font-size: 17px;
+}
+
+/* Input Placeholder */
+input::placeholder {
+    color: #cbd5e1 !important;
+}
+
+/* Buttons */
+.stButton > button {
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        #06b6d4,
+        #3b82f6,
+        #8b5cf6
+    );
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 14px;
+    border: none;
+    padding: 14px;
+    transition: 0.3s;
+}
+
+/* Button Hover */
+.stButton > button:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 0px 20px rgba(59,130,246,0.6);
+}
+
+/* Chunk Counter */
+.chunk-box {
+    background: linear-gradient(
+        90deg,
+        #0ea5e9,
+        #6366f1
+    );
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* Response Box */
+.response-box {
+    background: rgba(255,255,255,0.05);
+    padding: 30px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+    margin-top: 20px;
+    color: white;
+    line-height: 1.9;
+    font-size: 18px;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #020617;
+}
+
+/* Success Message */
+.stAlert {
+    border-radius: 15px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 10px;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 40px;
+    font-size: 15px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ========================= HERO SECTION =========================
+
+st.markdown("""
+<div class="main-title">
+    🤖 AI RAG PDF Assistant
+</div>
+
+<div class="sub-text">
+    Upload PDFs • Retrieve Knowledge • Ask Questions • Powered by Groq + LangChain
+</div>
+""", unsafe_allow_html=True)
+
+# ========================= LOAD ENV =========================
+
 load_dotenv()
 
-# Get Groq API Key
+# ========================= API KEY =========================
+
 groq_api_key = os.getenv("GROQ_API_KEY")
 
-# Create Groq LLM
+# ========================= CREATE LLM =========================
+
 llm = ChatGroq(
     groq_api_key=groq_api_key,
     model_name="llama-3.3-70b-versatile"
 )
 
-# Streamlit UI
-st.title("RAG PDF Chat Application")
+# ========================= FILE UPLOAD =========================
 
-# Upload PDF
 uploaded_file = st.file_uploader(
-    "Upload your PDF",
+    "📂 Upload your PDF",
     type="pdf"
 )
 
-# Check PDF upload
+# ========================= PROCESS PDF =========================
+
 if uploaded_file is not None:
 
-    st.success("PDF Uploaded Successfully")
+    st.success("✅ PDF Uploaded Successfully")
 
-    # Save uploaded PDF temporarily
+    # Save temporary PDF
     with tempfile.NamedTemporaryFile(
         delete=False,
         suffix=".pdf"
@@ -52,7 +230,8 @@ if uploaded_file is not None:
 
     documents = loader.load()
 
-    # Text Chunking
+    # ========================= TEXT SPLITTING =========================
+
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200
@@ -60,69 +239,110 @@ if uploaded_file is not None:
 
     chunks = text_splitter.split_documents(documents)
 
-    st.write(f"Total Chunks Created: {len(chunks)}")
+    # ========================= CHUNK DISPLAY =========================
 
-    # Create Embeddings
+    st.markdown(
+        f'''
+        <div class="chunk-box">
+            📚 Total Chunks Created: {len(chunks)}
+        </div>
+        ''',
+        unsafe_allow_html=True
+    )
+
+    # ========================= EMBEDDINGS =========================
+
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    # Create Vector Database
+    # ========================= VECTOR DATABASE =========================
+
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings
     )
 
-    # Create Retriever
+    # ========================= RETRIEVER =========================
+
     retriever = vectorstore.as_retriever()
 
-    # User Question
+    # ========================= QUESTION INPUT =========================
+
     question = st.text_input(
-        "Ask a question from the PDF"
+        "💬 Ask a question from the PDF"
     )
 
-    # Generate Response Button
-    if st.button("Generate Response"):
+    # ========================= RESPONSE BUTTON =========================
+
+    if st.button("🚀 Generate Response"):
 
         if question:
 
-            # Retrieve relevant chunks
-            retrieved_docs = retriever.invoke(question)
+            with st.spinner("Thinking... 🤔"):
 
-            # Combine retrieved context
-            context = "\n\n".join(
-                [doc.page_content for doc in retrieved_docs]
-            )
+                # Retrieve relevant chunks
+                retrieved_docs = retriever.invoke(question)
 
-            # Prompt Template
-            prompt = ChatPromptTemplate.from_template(
-                """
-                You are a helpful AI assistant.
+                # Combine context
+                context = "\n\n".join(
+                    [doc.page_content for doc in retrieved_docs]
+                )
 
-                Answer the question ONLY from the provided context.
+                # ========================= PROMPT =========================
 
-                If the answer is not available in the context,
-                say:
-                "Answer not found in the uploaded PDF."
+                prompt = ChatPromptTemplate.from_template(
+                    """
+                    You are a helpful AI assistant.
 
-                Context:
-                {context}
+                    Answer the question ONLY from the provided context.
 
-                Question:
-                {question}
-                """
-            )
+                    If the answer is not available in the context,
+                    say:
 
-            # Final Prompt
-            final_prompt = prompt.format(
-                context=context,
-                question=question
-            )
+                    "Answer not found in the uploaded PDF."
 
-            # Generate Response
-            response = llm.invoke(final_prompt)
+                    Context:
+                    {context}
 
-            # Display Response
-            st.subheader("RAG Response")
+                    Question:
+                    {question}
+                    """
+                )
 
-            st.write(response.content)
+                # Final Prompt
+                final_prompt = prompt.format(
+                    context=context,
+                    question=question
+                )
+
+                # ========================= GENERATE RESPONSE =========================
+
+                response = llm.invoke(final_prompt)
+
+                # ========================= RESPONSE TITLE =========================
+
+                st.markdown("""
+                <h2 style='color:#38bdf8; margin-top:30px;'>
+                    🤖 RAG Response
+                </h2>
+                """, unsafe_allow_html=True)
+
+                # ========================= RESPONSE BOX =========================
+
+                st.markdown(
+                    f'''
+                    <div class="response-box">
+                        {response.content}
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+
+# ========================= FOOTER =========================
+
+st.markdown("""
+<div class="footer">
+    Built with ❤️ using Streamlit, LangChain, Groq, ChromaDB & HuggingFace Embeddings
+</div>
+""", unsafe_allow_html=True)
